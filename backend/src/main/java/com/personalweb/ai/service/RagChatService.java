@@ -19,6 +19,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.personalweb.ai.config.RagProperties;
 import com.personalweb.ai.dto.ChatRequest;
 import com.personalweb.ai.dto.SourceReference;
+import com.personalweb.ai.exception.BusinessException;
 
 import reactor.core.publisher.Flux;
 
@@ -32,11 +33,11 @@ public class RagChatService {
         private final ObjectMapper objectMapper;
 
         public RagChatService(
-            VectorStore vectorStore,
-            ChatClient.Builder chatClientBuilder,
-            RagProperties ragProperties,
-            ChatHistoryService chatHistoryService,
-            ObjectMapper objectMapper) {
+                VectorStore vectorStore,
+                ChatClient.Builder chatClientBuilder,
+                RagProperties ragProperties,
+                ChatHistoryService chatHistoryService,
+                ObjectMapper objectMapper) {
         this.vectorStore = vectorStore;
         this.chatClient = chatClientBuilder.build();
         this.ragProperties = ragProperties;
@@ -46,9 +47,13 @@ public class RagChatService {
 
         public Flux<ServerSentEvent<String>> chat(ChatRequest requestPayload) {
         String question = requestPayload.getQuestion();
+            if (!StringUtils.hasText(question)) {
+                throw BusinessException.badRequest("QUESTION_EMPTY", "question 不能为空");
+            }
+
         String sessionId = StringUtils.hasText(requestPayload.getSessionId())
-            ? requestPayload.getSessionId()
-            : UUID.randomUUID().toString();
+                    ? requestPayload.getSessionId()
+                    : UUID.randomUUID().toString();
 
         SearchRequest request = SearchRequest.builder()
                 .query(question)
@@ -68,51 +73,55 @@ public class RagChatService {
         StringBuilder answerBuilder = new StringBuilder();
 
         Flux<ServerSentEvent<String>> sourcesEvent = Flux.just(
-            ServerSentEvent.<String>builder()
-                .event("sources")
-                .data(sourcesJson)
-                .build());
+                ServerSentEvent.<String>builder()
+                        .event("sources")
+                        .data(sourcesJson)
+                        .build());
 
         Flux<ServerSentEvent<String>> tokenEventStream = chatClient.prompt()
                 .system(systemPrompt)
                 .user(question)
                 .stream()
-            .content()
-            .doOnNext(answerBuilder::append)
-            .map(delta -> ServerSentEvent.<String>builder()
-                .event("token")
-                .data(delta)
-                .build())
-            .doOnComplete(() -> chatHistoryService.saveTurn(
-                sessionId,
-                question,
-                answerBuilder.toString(),
-                sourcesJson));
+                .content()
+                .doOnNext(answerBuilder::append)
+                .map(delta -> ServerSentEvent.<String>builder()
+                        .event("token")
+                        .data(delta)
+                        .build())
+                .doOnComplete(() -> chatHistoryService.saveTurn(
+                        sessionId,
+                        question,
+                        answerBuilder.toString(),
+                        sourcesJson));
 
         Flux<ServerSentEvent<String>> doneEvent = Flux.just(
-            ServerSentEvent.<String>builder()
-                .event("done")
-                .data("[DONE]")
-                .build());
+                ServerSentEvent.<String>builder()
+                        .event("done")
+                        .data("[DONE]")
+                        .build());
 
         return sourcesEvent
-            .concatWith(tokenEventStream)
-            .concatWith(doneEvent)
-            .onErrorResume(ex -> {
-                chatHistoryService.saveTurn(sessionId, question, "", sourcesJson);
-                return Flux.just(ServerSentEvent.<String>builder()
-                    .event("error")
-                    .data("回答生成失败，请稍后重试。")
-                    .build());
-            });
+                .concatWith(tokenEventStream)
+                .concatWith(doneEvent)
+                .onErrorResume(ex -> {
+                    chatHistoryService.saveTurn(sessionId, question, "", sourcesJson);
+                    return Flux.just(ServerSentEvent.<String>builder()
+                            .event("error")
+                            .data("回答生成失败，请稍后重试。")
+                            .build());
+                });
+    }
+
+    public List<SourceReference> searchSources(String question) {
+        if (!StringUtils.hasText(question)) {
+            throw BusinessException.badRequest("QUESTION_EMPTY", "question 不能为空");
         }
 
-        public List<SourceReference> searchSources(String question) {
         SearchRequest request = SearchRequest.builder()
-            .query(question)
-            .topK(ragProperties.getTopK())
-            .similarityThreshold(ragProperties.getSimilarityThreshold())
-            .build();
+                .query(question)
+                .topK(ragProperties.getTopK())
+                .similarityThreshold(ragProperties.getSimilarityThreshold())
+                .build();
 
         List<Document> docs = vectorStore.similaritySearch(request);
         return buildSources(docs);

@@ -8,7 +8,7 @@
 - 对话历史持久化（本地 H2 文件库）
 - Vue 3 右下角悬浮聊天组件
 
-说明：当运行环境未提供可用的 `VectorStore` Bean 时，系统会自动回退到本地 `SimpleVectorStore`，保证接口可启动联调。
+说明：当前向量检索基于阿里云 DashVector Java SDK + 自定义 `VectorStore` 适配器实现。
 
 ## 1. 后端配置
 
@@ -49,6 +49,34 @@ curl -N -X POST http://localhost:8080/api/chat \
 
 ```bash
 curl http://localhost:8080/api/chat/history/demo-session-1
+```
+
+调试文档清理（先 dry-run 预演）：
+
+```bash
+curl -X POST http://localhost:8080/api/debug/dashvector/cleanup-debug-docs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "dryRun": true,
+    "topK": 50,
+    "maxQueries": 4,
+    "idPrefix": "debug-"
+  }'
+```
+
+正式删除：
+
+```bash
+curl -X POST http://localhost:8080/api/debug/dashvector/cleanup-debug-docs \
+  -H "Content-Type: application/json" \
+  -d '{"dryRun": false}'
+```
+
+PowerShell 脚本方式：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File ./scripts/cleanup-debug-docs.ps1 -DryRun
+powershell -ExecutionPolicy Bypass -File ./scripts/cleanup-debug-docs.ps1
 ```
 
 批量入库：
@@ -95,6 +123,8 @@ curl -X POST http://localhost:8080/api/knowledge/ingest/batch \
 ## 5. 关键文件说明
 
 - `backend/pom.xml`：后端依赖（WebFlux/JDBC/H2）
+- `backend/src/main/java/com/personalweb/ai/config/DashVectorConfig.java`：DashVector 客户端与集合初始化
+- `backend/src/main/java/com/personalweb/ai/vectorstore/DashVectorVectorStore.java`：Spring AI `VectorStore` 适配器
 - `backend/src/main/java/com/personalweb/ai/service/KnowledgeIngestionService.java`：知识切分、向量化与入库
 - `backend/src/main/java/com/personalweb/ai/controller/KnowledgeController.java`：批量入库接口
 - `backend/src/main/java/com/personalweb/ai/service/RagChatService.java`：相似度检索 + Prompt 组装 + 结构化 SSE 事件

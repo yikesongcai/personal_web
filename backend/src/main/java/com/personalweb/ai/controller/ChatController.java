@@ -9,9 +9,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import com.personalweb.ai.dto.ChatRequest;
 import com.personalweb.ai.dto.ChatHistoryTurnResponse;
+import com.personalweb.ai.dto.SourceReference;
 import com.personalweb.ai.service.ChatHistoryService;
 import com.personalweb.ai.service.RagChatService;
 
@@ -39,5 +41,10 @@ public class ChatController {
     @GetMapping("/chat/history/{sessionId}")
     public List<ChatHistoryTurnResponse> history(@PathVariable String sessionId) {
         return chatHistoryService.listBySessionId(sessionId);
+    }
+
+    @GetMapping("/chat/sources")
+    public List<SourceReference> sources(@RequestParam String question) {
+        return ragChatService.searchSources(question);
     }
 }

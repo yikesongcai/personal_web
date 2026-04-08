@@ -15,11 +15,12 @@
     <artifactId>personal-web-ai</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <name>personal-web-ai</name>
-    <description>Personal website AI assistant powered by Spring AI + Pinecone</description>
+    <description>Personal website AI assistant powered by Spring AI + DashVector</description>
 
     <properties>
         <java.version>17</java.version>
         <spring-ai.version>1.0.0</spring-ai.version>
+        <dashvector.sdk.version>1.0.12</dashvector.sdk.version>
     </properties>
 
     <dependencyManagement>
@@ -47,7 +48,13 @@
 
         <dependency>
             <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-starter-vector-store-pinecone</artifactId>
+            <artifactId>spring-ai-vector-store</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.aliyun</groupId>
+            <artifactId>dashvector-java-sdk</artifactId>
+            <version>${dashvector.sdk.version}</version>
         </dependency>
 
         <dependency>
