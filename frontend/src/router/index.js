@@ -10,8 +10,9 @@ const routes = [
   { 
     path: '/admin', 
     component: () => import('../views/admin/Admin.vue'),
-    redirect: '/admin/projects',
+    redirect: '/admin/dashboard',
     children: [
+      { path: 'dashboard', component: () => import('../views/admin/Dashboard.vue') },
       { path: 'projects', component: () => import('../views/admin/ProjectManage.vue') },
       { path: 'articles', component: () => import('../views/admin/ArticleManage.vue') }
     ]

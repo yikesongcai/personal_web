@@ -1,8 +1,8 @@
 <template>
   <div class="manage-page">
     <div class="header">
-      <h2>Articles</h2>
-      <button class="btn primary" @click="openForm()">+ Add Article</button>
+      <h2>文章管理 (Articles)</h2>
+      <button class="btn primary" @click="openForm()">+ 新增文章</button>
     </div>
 
     <!-- Table -->
@@ -10,7 +10,7 @@
       <table>
         <thead>
           <tr>
-            <th>ID</th><th>Title</th><th>Category</th><th>Date</th><th>Actions</th>
+            <th>ID</th><th>文章标题</th><th>分类</th><th>创建时间</th><th>操作</th>
           </tr>
         </thead>
         <tbody>
@@ -20,8 +20,8 @@
             <td>{{ item.category }}</td>
             <td>{{ new Date(item.createdAt).toLocaleDateString() }}</td>
             <td class="actions">
-              <button class="btn-sm" @click="openForm(item)">Edit</button>
-              <button class="btn-sm danger" @click="deleteItem(item.id)">Delete</button>
+              <button class="btn-sm" @click="openForm(item)">编辑</button>
+              <button class="btn-sm danger" @click="deleteItem(item.id)">删除</button>
             </td>
           </tr>
         </tbody>
@@ -31,23 +31,23 @@
     <!-- Modal Form -->
     <div class="modal-overlay" v-if="showForm" @click.self="showForm = false">
       <div class="modal">
-        <h3>{{ formData.id ? 'Edit Article' : 'New Article' }}</h3>
+        <h3>{{ formData.id ? '编辑文章' : '新增文章' }}</h3>
         <form @submit.prevent="saveItem">
           <div class="form-group">
-            <label>Title</label>
+            <label>标题 (Title)</label>
             <input v-model="formData.title" required />
           </div>
           <div class="form-group">
-            <label>Category</label>
+            <label>分类 (Category)</label>
             <input v-model="formData.category" />
           </div>
           <div class="form-group">
-            <label>Content (Markdown) - <i>Will sync to VectorStore</i></label>
+            <label>内容 (Markdown) - <i>将自动同步至AI知识库</i></label>
             <textarea v-model="formData.content" rows="12" required></textarea>
           </div>
           <div class="form-actions">
-            <button type="button" class="btn ghost" @click="showForm = false">Cancel</button>
-            <button type="submit" class="btn primary">Save</button>
+            <button type="button" class="btn ghost" @click="showForm = false">取消</button>
+            <button type="submit" class="btn primary">保存</button>
           </div>
         </form>
       </div>
@@ -91,12 +91,12 @@ const saveItem = async () => {
     showForm.value = false
     fetchItems()
   } else {
-    alert('Save failed')
+    alert('保存失败')
   }
 }
 
 const deleteItem = async (id) => {
-  if(!confirm('Are you sure you want to delete this?')) return
+  if(!confirm('确定要删除该文章吗？这是一项不可逆的操作。')) return
   const res = await fetch(`/api/admin/articles/${id}`, { method: 'DELETE' })
   if(res.ok) fetchItems()
 }

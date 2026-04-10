@@ -1,10 +1,11 @@
 ﻿<template>
   <div class="admin-layout">
     <aside class="sidebar">
-      <h2>Admin Panel</h2>
+      <h2>控制中心 (Admin)</h2>
       <nav>
-        <router-link to="/admin/projects">Manage Projects</router-link>
-        <router-link to="/admin/articles">Manage Articles</router-link>
+        <router-link to="/admin/dashboard">仪表盘概览</router-link>
+        <router-link to="/admin/projects">项目管理</router-link>
+        <router-link to="/admin/articles">文章管理</router-link>
       </nav>
     </aside>
     <main class="admin-content">
