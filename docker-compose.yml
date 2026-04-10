@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  core-mysql:
+    image: mysql:8.0
+    container_name: core-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${APP_DB_PASSWORD:-123456}
+      MYSQL_DATABASE: personal_web_ai
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+      # 如果有初始化SQL，可放在这：
+      # - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    volumes:
+      # （已移除H2文件挂载，改为MySQL独立容器持久化）
+      - ./logs:/app/logs
+    restart: always
+    depends_on:
+      - core-mysql
+    environment:
+      # -------------------------------------------------------------
+      # 【配置信息修改区】请在这里填写你要部署在服务器上的实际密钥等！
+      # 也可以在这里写成 ${YOUR_VAR} 去读取宿主机服务器的系统环境变量配置。
+      # -------------------------------------------------------------
+      - APP_DB_URL=jdbc:mysql://core-mysql:3306/personal_web_ai?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+      - APP_DB_USER=root
+      - APP_DB_PASSWORD=${APP_DB_PASSWORD:-123456}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com}
+      - OPENAI_CHAT_MODEL=${OPENAI_CHAT_MODEL:-gpt-4o-mini}
+      - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL:-text-embedding-3-small}
+      - DASHVECTOR_API_KEY=${DASHVECTOR_API_KEY}
+      - DASHVECTOR_ENDPOINT=${DASHVECTOR_ENDPOINT}
+      - DASHVECTOR_COLLECTION_NAME=${DASHVECTOR_COLLECTION_NAME:-personal-portfolio}
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      # 映射到宿主机端口；如果你的服务器 80 端口已被占用，请改成如 "8080:80" (左宿主右容器)
+      - "80:80"
+    volumes:
+      # 挂载了一个根目录下的 nginx.conf 用于转发前端 /api 的所有请求给后台
+      # 目的是隐藏后端真实公网端口、解决前后端分离部署导致的跨域问题
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+    restart: always

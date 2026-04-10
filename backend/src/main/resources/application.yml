@@ -6,18 +6,14 @@ spring:
     name: personal-web-ai
 
   datasource:
-    url: ${APP_DB_URL:jdbc:h2:file:./data/personalweb-ai;AUTO_SERVER=TRUE}
-    username: ${APP_DB_USER:sa}
-    password: ${APP_DB_PASSWORD:}
-    driver-class-name: org.h2.Driver
+    url: ${APP_DB_URL:jdbc:mysql://localhost:3306/personal_web_ai?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
+    username: ${APP_DB_USER:root}
+    password: ${APP_DB_PASSWORD:123456}
+    driver-class-name: com.mysql.cj.jdbc.Driver
 
   sql:
     init:
       mode: always
-
-  h2:
-    console:
-      enabled: true
 
   ai:
     openai:

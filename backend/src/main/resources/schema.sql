@@ -1,8 +1,32 @@
-CREATE TABLE IF NOT EXISTS chat_turn (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    session_id VARCHAR(128) NOT NULL,
-    user_question CLOB NOT NULL,
-    assistant_answer CLOB NOT NULL,
-    sources_json CLOB,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- schema.sql: Initialize MySQL schema
+CREATE TABLE IF NOT EXISTS `chat_turn` (
+  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `session_id` VARCHAR(128) NOT NULL,
+  `user_question` TEXT NOT NULL,
+  `assistant_answer` TEXT NOT NULL,
+  `sources_json` TEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `project` (
+  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `title` VARCHAR(255) NOT NULL,
+  `cover_image` VARCHAR(1000),
+  `frameworks` VARCHAR(255),
+  `online_url` VARCHAR(1000),
+  `github_url` VARCHAR(1000),
+  `content` LONGTEXT,
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `article` (
+  `id` BIGINT AUTO_INCREMENT PRIMARY KEY,
+  `title` VARCHAR(255) NOT NULL,
+  `summary` VARCHAR(1000),
+  `content` LONGTEXT,
+  `tags` VARCHAR(255),
+  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
