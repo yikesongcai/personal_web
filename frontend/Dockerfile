@@ -1,28 +1,18 @@
-# ----- 前端构建与部署 Dockerfile -----
-FROM node:20-alpine AS builder
+﻿# ---- 第一阶段：Node.js 编译 ----
+FROM node:18-alpine as build-stage
 WORKDIR /app
-
-# 1. 复制依赖清单，安装前端依赖
 COPY package*.json ./
-RUN npm install
-
-# 2. 复制源码至工作目录，进行打包构建
+# 使用国内淘宝镜像加速 npm 安装
+RUN npm config set registry https://registry.npmmirror.com && npm install
+# 复制前端代码
 COPY . .
+# 执行打包命令
 RUN npm run build
 
-
-# 3. 使用轻量化的 Nginx 提供服务
-FROM nginx:alpine
-
-# 将第一阶段的构建产物(通常是 /dist) 拷贝到 Nginx 默认静态站点目录下
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# ----- 【配置信息说明】 -----
-# 前端通常属于纯静态资源，所有的环境变量大多在构建阶段固定。
-# 为了避免跨域并且不需要把后端 API 直接暴露给公网，
-# 服务器部署时我们一般利用下面提供的 nginx.conf 来配置反向代理：
-# 将访问本服务器 /api/* 的请求路由转发给名为 backend 容器的 8080 端口。
-# ------------------------------
-
+# ---- 第二阶段：Nginx 运行 ----
+FROM nginx:alpine as production-stage
+# 把第一阶段编译好的 dist 目录拷过来
+COPY --from=build-stage /app/dist /usr/share/nginx/html
+# 暴露前端默认端口
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
