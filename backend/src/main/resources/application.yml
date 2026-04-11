@@ -6,9 +6,9 @@ spring:
     name: personal-web-ai
 
   datasource:
-    url: ${APP_DB_URL:jdbc:mysql://localhost:3306/personal_web_ai?createDatabaseIfNotExist=true&useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true}
-    username: ${APP_DB_USER:root}
-    password: ${APP_DB_PASSWORD:123456}
+    url: ${APP_DB_URL}
+    username: ${APP_DB_USER}
+    password: ${APP_DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   sql:
@@ -18,20 +18,20 @@ spring:
   ai:
     openai:
       api-key: ${OPENAI_API_KEY}
-      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+      base-url: ${OPENAI_BASE_URL}
       chat:
         options:
-          model: ${OPENAI_CHAT_MODEL:gpt-o4-mini}
+          model: ${OPENAI_CHAT_MODEL}
           temperature: 0.2
       embedding:
         options:
-          model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
+          model: ${OPENAI_EMBEDDING_MODEL}
 
     vectorstore:
       dashvector:
         api-key: ${DASHVECTOR_API_KEY}
         endpoint: ${DASHVECTOR_ENDPOINT}
-        collection-name: ${DASHVECTOR_COLLECTION_NAME:personal-portfolio}
+        collection-name: ${DASHVECTOR_COLLECTION_NAME}       
 
 app:
   rag:

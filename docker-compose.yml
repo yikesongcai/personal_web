@@ -29,9 +29,6 @@ services:
       - core-mysql
     env_file:
       - .env
-    environment:
-      - APP_DB_URL=jdbc:mysql://core-mysql:3306/personal_web_ai?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-      - APP_DB_USER=root
 
   frontend:
     build:
@@ -39,7 +36,7 @@ services:
       dockerfile: Dockerfile
     container_name: web-ui
     ports:
-      - "80:80"
+      - "8081:80"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
