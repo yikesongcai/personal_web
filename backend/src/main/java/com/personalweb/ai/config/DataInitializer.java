@@ -48,6 +48,14 @@ public class DataInitializer {
                         "('2026-04-10', 8500,  95)");
                 System.out.println("Inserted mock daily_stats.");
             }
+            // Check if rate_limit_whitelist exist
+            Integer whitelistCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM rate_limit_whitelist", Integer.class);
+            if (whitelistCount != null && whitelistCount == 0) {
+                jdbcTemplate.update("INSERT INTO rate_limit_whitelist (ip, remark) VALUES " +
+                        "('127.0.0.1', 'Local IPv4')," +
+                        "('0:0:0:0:0:0:0:1', 'Local IPv6')");
+                System.out.println("Inserted mock rate_limit_whitelist.");
+            }
         };
     }
 }

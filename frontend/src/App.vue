@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <div>
     <nav class="navbar">
       <div class="nav-brand"><router-link to="/">SONG'S LAB</router-link></div>
@@ -6,7 +6,6 @@
         <router-link to="/">Home</router-link>
         <router-link to="/projects">Projects</router-link>
         <router-link to="/articles">Articles</router-link>
-        <router-link to="/admin" class="admin-link">Admin</router-link>
       </div>
     </nav>
     <router-view></router-view>

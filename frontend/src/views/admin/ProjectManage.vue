@@ -82,7 +82,9 @@ const showForm = ref(false)
 const formData = ref({})
 
 const fetchItems = async () => {
-  const res = await fetch('/api/admin/projects')
+  const res = await fetch('/api/admin/projects', {
+    headers: { 'X-Admin-Token': sessionStorage.getItem('adminToken') }
+  })
   if(res.ok) items.value = await res.json()
 }
 
@@ -105,6 +107,7 @@ const uploadCover = async (e) => {
   try {
     const res = await fetch('/api/admin/upload', {
       method: 'POST',
+      headers: { 'X-Admin-Token': sessionStorage.getItem('adminToken') },
       body: uploadData
     })
     const data = await res.json()
@@ -125,7 +128,10 @@ const saveItem = async () => {
   
   const res = await fetch(url, {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 
+      'Content-Type': 'application/json',
+      'X-Admin-Token': sessionStorage.getItem('adminToken')
+    },
     body: JSON.stringify(formData.value)
   })
   
@@ -139,7 +145,10 @@ const saveItem = async () => {
 
 const deleteItem = async (id) => {
   if(!confirm('确定要删除该项目吗？这是一项不可逆的操作。')) return
-  const res = await fetch(`/api/admin/projects/${id}`, { method: 'DELETE' })
+  const res = await fetch(`/api/admin/projects/${id}`, { 
+    method: 'DELETE',
+    headers: { 'X-Admin-Token': sessionStorage.getItem('adminToken') }
+  })
   if(res.ok) fetchItems()
 }
 

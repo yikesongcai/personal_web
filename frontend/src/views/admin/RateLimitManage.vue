@@ -1,8 +1,12 @@
 <template>
   <div class="manage-page">
     <div class="header">
-      <h2>文章管理 (Articles)</h2>
-      <button class="btn primary" @click="openForm()">+ 新增文章</button>
+      <h2>Chat 接口速率白名单管理</h2>
+      <button class="btn primary" @click="openForm()">+ 添加 IP</button>
+    </div>
+    
+    <div class="alert info">
+      <p>⚠️ 注意：Chat 接口默认限制每个 IP 频率为 <strong>10次/分钟</strong>。白名单中的 IP 不受此限制。添加后最多等一分钟生效。</p>
     </div>
 
     <!-- Table -->
@@ -10,17 +14,16 @@
       <table>
         <thead>
           <tr>
-            <th>ID</th><th>文章标题</th><th>分类</th><th>创建时间</th><th>操作</th>
+            <th>ID</th><th>IP 地址</th><th>备注</th><th>添加时间</th><th>操作</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="item in items" :key="item.id">
             <td>{{ item.id }}</td>
-            <td>{{ item.title }}</td>
-            <td>{{ item.category }}</td>
-            <td>{{ new Date(item.createdAt).toLocaleDateString() }}</td>
+            <td><code>{{ item.ip }}</code></td>
+            <td>{{ item.remark }}</td>
+            <td>{{ new Date(item.created_at).toLocaleString() }}</td>
             <td class="actions">
-              <button class="btn-sm" @click="openForm(item)">编辑</button>
               <button class="btn-sm danger" @click="deleteItem(item.id)">删除</button>
             </td>
           </tr>
@@ -31,19 +34,15 @@
     <!-- Modal Form -->
     <div class="modal-overlay" v-if="showForm" @click.self="showForm = false">
       <div class="modal">
-        <h3>{{ formData.id ? '编辑文章' : '新增文章' }}</h3>
+        <h3>添加白名单 IP</h3>
         <form @submit.prevent="saveItem">
           <div class="form-group">
-            <label>标题 (Title)</label>
-            <input v-model="formData.title" required />
+            <label>IP 地址</label>
+            <input v-model="formData.ip" required placeholder="例如: 192.168.1.100" />
           </div>
           <div class="form-group">
-            <label>分类 (Category)</label>
-            <input v-model="formData.category" />
-          </div>
-          <div class="form-group">
-            <label>内容 (Markdown) - <i>将自动同步至AI知识库</i></label>
-            <textarea v-model="formData.content" rows="12" required></textarea>
+            <label>备注说明</label>
+            <input v-model="formData.remark" placeholder="如: 办公室电脑" />
           </div>
           <div class="form-actions">
             <button type="button" class="btn ghost" @click="showForm = false">取消</button>
@@ -63,50 +62,41 @@ const showForm = ref(false)
 const formData = ref({})
 
 const fetchItems = async () => {
-  const res = await fetch('/api/admin/articles', {
+  const res = await fetch('/api/admin/rate-limit/whitelist', {
     headers: { 'X-Admin-Token': sessionStorage.getItem('adminToken') }
   })
-  if(res.ok) items.value = await res.json()
+  if (res.ok) items.value = await res.json()
 }
 
-const openForm = (item = null) => {
-  if (item) {
-    formData.value = { ...item }
-  } else {
-    formData.value = { title: '', category: '', content: '' }
-  }
+const openForm = () => {
+  formData.value = { ip: '', remark: '' }
   showForm.value = true
 }
 
 const saveItem = async () => {
-  const isEdit = !!formData.value.id
-  const url = isEdit ? `/api/admin/articles/${formData.value.id}` : '/api/admin/articles'
-  const method = isEdit ? 'PUT' : 'POST'
-  
-  const res = await fetch(url, {
-    method,
+  const res = await fetch('/api/admin/rate-limit/whitelist', {
+    method: 'POST',
     headers: { 
       'Content-Type': 'application/json',
       'X-Admin-Token': sessionStorage.getItem('adminToken')
     },
     body: JSON.stringify(formData.value)
   })
-  
-  if(res.ok) {
+  if (res.ok) {
     showForm.value = false
     fetchItems()
   } else {
-    alert('保存失败')
+    alert('保存失败，可能 IP 已存在')
   }
 }
 
 const deleteItem = async (id) => {
-  if(!confirm('确定要删除该文章吗？这是一项不可逆的操作。')) return
-  const res = await fetch(`/api/admin/articles/${id}`, { 
+  if (!confirm('确定要删除该 IP 吗？')) return
+  const res = await fetch(`/api/admin/rate-limit/whitelist/${id}`, { 
     method: 'DELETE',
     headers: { 'X-Admin-Token': sessionStorage.getItem('adminToken') }
   })
-  if(res.ok) fetchItems()
+  if (res.ok) fetchItems()
 }
 
 onMounted(fetchItems)
@@ -114,8 +104,10 @@ onMounted(fetchItems)
 
 <style scoped>
 .manage-page { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
 .header h2 { margin: 0; color: #0f172a; }
+.alert.info { background: #e0f2fe; color: #0369a1; padding: 12px 16px; border-radius: 6px; margin-bottom: 2rem; font-size: 14px; }
+.alert p { margin: 0; }
 .btn { padding: 8px 16px; border-radius: 6px; font-weight: 500; cursor: pointer; border: none; font-size: 14px; }
 .btn.primary { background: #0ea5e9; color: white; transition: background 0.2s; }
 .btn.primary:hover { background: #0284c7; }
@@ -134,7 +126,7 @@ td { color: #334155; font-size: 15px; }
 .modal h3 { margin-top: 0; margin-bottom: 1.5rem; color: #0f172a; border-bottom: 1px solid #f1f5f9; padding-bottom: 10px; }
 .form-group { margin-bottom: 1.2rem; }
 .form-group label { display: block; margin-bottom: 6px; font-size: 14px; font-weight: 500; color: #334155; }
-.form-group input, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; font-size: 14px; box-sizing: border-box; }
-.form-group input:focus, .form-group textarea:focus { outline: none; border-color: #0ea5e9; box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1); }
+.form-group input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+.form-group input:focus { outline: none; border-color: #0ea5e9; box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1); }
 .form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 2rem; }
 </style>

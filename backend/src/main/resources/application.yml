@@ -44,3 +44,7 @@ management:
     web:
       exposure:
         include: health,info,metrics
+
+spring.codec.max-in-memory-size: 10MB
+spring.servlet.multipart.max-file-size: 10MB
+spring.servlet.multipart.max-request-size: 10MB

@@ -7,14 +7,20 @@ const routes = [
   { path: '/projects/:id', component: () => import('../views/ProjectDetail.vue') },
   { path: '/articles', component: () => import('../views/Articles.vue') },
   { path: '/articles/:id', component: () => import('../views/ArticleDetail.vue') },
+  {
+    path: '/admin/login',
+    component: () => import('../views/admin/AdminLogin.vue')
+  },
   { 
     path: '/admin', 
     component: () => import('../views/admin/Admin.vue'),
     redirect: '/admin/dashboard',
+    meta: { requiresAuth: true },
     children: [
       { path: 'dashboard', component: () => import('../views/admin/Dashboard.vue') },
       { path: 'projects', component: () => import('../views/admin/ProjectManage.vue') },
-      { path: 'articles', component: () => import('../views/admin/ArticleManage.vue') }
+      { path: 'articles', component: () => import('../views/admin/ArticleManage.vue') },
+      { path: 'rate-limit', component: () => import('../views/admin/RateLimitManage.vue') }
     ]
   }
 ]
@@ -22,4 +28,17 @@ const routes = [
 export const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+router.beforeEach((to, from, next) => {
+  if (to.matched.some(record => record.meta.requiresAuth)) {
+    const token = sessionStorage.getItem('adminToken')
+    if (!token) {
+      next({ path: '/admin/login' })
+    } else {
+      next()
+    }
+  } else {
+    next()
+  }
 })

@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.bind.support.WebExchangeBindException;
 import org.springframework.web.server.ServerWebExchange;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -29,8 +32,9 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiErrorResponse> handleAny(Exception ex, ServerWebExchange exchange) {
+        log.error("Internal Server Error: ", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(buildResponse("INTERNAL_ERROR", "服务器内部错误", exchange));
+                .body(buildResponse("INTERNAL_ERROR", "服务器内部错误，请稍后再试", exchange));
     }
 
     private ApiErrorResponse buildResponse(String code, String message, ServerWebExchange exchange) {
