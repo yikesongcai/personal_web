@@ -17,7 +17,7 @@ import reactor.core.publisher.Mono;
 @Component
 public class AdminAuthFilter implements WebFilter {
 
-    @Value("${ADMIN_API_KEY}")
+    @Value("${app.admin.api-key}")
     private String adminApiKey;
 
     private static final List<String> PROTECTED_PREFIXES = List.of(

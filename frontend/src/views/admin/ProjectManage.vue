@@ -17,7 +17,7 @@
           <tr v-for="item in items" :key="item.id">
             <td>{{ item.id }}</td>
             <td>{{ item.title }}</td>
-            <td>{{ item.framework }}</td>
+            <td>{{ item.frameworks }}</td>
             <td>{{ new Date(item.createdAt).toLocaleDateString() }}</td>
             <td class="actions">
               <button class="btn-sm" @click="openForm(item)">编辑</button>
@@ -38,26 +38,30 @@
             <input v-model="formData.title" required />
           </div>
           <div class="form-group">
-            <label>项目简介 (Description)</label>
-            <input v-model="formData.description" />
+          <label>使用框架 (Frameworks)</label>
+          <input v-model="formData.frameworks" placeholder="如: Spring Boot / Vue" />
+        </div>
+        <div class="form-group">
+          <label>项目简介 (Summary) <small style="color:#94a3b8">如填写，将作为展示用摘要显示在卡片和列表中</small></label>
+          <textarea v-model="formData.summary" rows="2" placeholder="一句话描述项目的核心功能和特色..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>在线地址 (Live URL)</label>
+            <input v-model="formData.onlineUrl" />
           </div>
           <div class="form-group">
-            <label>使用框架 (Framework)</label>
-            <input v-model="formData.framework" />
+          <label>GitHub 地址 (GitHub URL)</label>
+          <div class="checkbox-row">
+            <input type="checkbox" id="closedSource" v-model="isClosedSource" @change="onClosedSourceChange" />
+            <label for="closedSource" class="checkbox-label">🔒 非开源项目（不显示 GitHub 链接）</label>
           </div>
-          <div class="form-group">
-            <label>在线地址 (Live URL)</label>
-            <input v-model="formData.projectUrl" />
-          </div>
-          <div class="form-group">
-            <label>GitHub 地址 (GitHub URL)</label>
-            <input v-model="formData.githubUrl" />
-          </div>
+          <input v-if="!isClosedSource" v-model="formData.githubUrl" placeholder="https://github.com/user/repo" style="margin-top:8px" />
+        </div>
           <div class="form-group">
             <label>封面图片 (Cover)</label>
             <input type="file" @change="uploadCover" accept="image/*" />
-            <div v-if="formData.coverUrl" style="margin-top: 8px">
-              <img :src="formData.coverUrl" alt="cover" style="max-height: 100px; border-radius: 4px; border: 1px solid #eee;" />
+            <div v-if="formData.coverImage" style="margin-top: 8px">
+              <img :src="formData.coverImage" alt="cover" style="max-height: 100px; border-radius: 4px; border: 1px solid #eee;" />
             </div>
           </div>
           <div class="form-group">
@@ -80,6 +84,7 @@ import { ref, onMounted } from 'vue'
 const items = ref([])
 const showForm = ref(false)
 const formData = ref({})
+const isClosedSource = ref(false)
 
 const fetchItems = async () => {
   const res = await fetch('/api/admin/projects', {
@@ -91,10 +96,18 @@ const fetchItems = async () => {
 const openForm = (item = null) => {
   if (item) {
     formData.value = { ...item }
+    isClosedSource.value = item.githubUrl === null || item.githubUrl === ''
   } else {
-    formData.value = { title: '', description: '', framework: '', projectUrl: '', githubUrl: '', coverUrl: '', content: '' }
+    formData.value = { title: '', frameworks: '', onlineUrl: '', githubUrl: '', coverImage: '', content: '' }
+    isClosedSource.value = false
   }
   showForm.value = true
+}
+
+const onClosedSourceChange = () => {
+  if (isClosedSource.value) {
+    formData.value.githubUrl = ''
+  }
 }
 
 const uploadCover = async (e) => {
@@ -112,7 +125,7 @@ const uploadCover = async (e) => {
     })
     const data = await res.json()
     if (data.url) {
-      formData.value.coverUrl = data.url
+      formData.value.coverImage = data.url
     } else {
       alert('上传失败：' + (data.error || '未知错误'))
     }
@@ -181,4 +194,7 @@ td { color: #334155; font-size: 15px; }
 .form-group input[type="file"] { padding: 6px; }
 .form-group input:focus, .form-group textarea:focus { outline: none; border-color: #0ea5e9; box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.1); }
 .form-actions { display: flex; justify-content: flex-end; gap: 12px; margin-top: 2rem; }
+.checkbox-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.checkbox-row input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: #0ea5e9; }
+.checkbox-label { font-size: 13px; color: #475569; cursor: pointer; }
 </style>

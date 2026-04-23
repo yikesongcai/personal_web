@@ -17,10 +17,12 @@ public class ProjectService {
 
     private final ProjectDao projectDao;
     private final VectorStore vectorStore;
+    private final SystemLogService systemLogService;
 
-    public ProjectService(ProjectDao projectDao, VectorStore vectorStore) {
+    public ProjectService(ProjectDao projectDao, VectorStore vectorStore, SystemLogService systemLogService) {
         this.projectDao = projectDao;
         this.vectorStore = vectorStore;
+        this.systemLogService = systemLogService;
     }
 
     public List<Project> listAll() {
@@ -36,6 +38,7 @@ public class ProjectService {
         Long id = projectDao.insert(project);
         project.setId(id);
         syncToVectorStore(project);
+        systemLogService.info("Project", "创建项目: [" + id + "] " + project.getTitle());
         return id;
     }
 
@@ -43,6 +46,7 @@ public class ProjectService {
     public void updateProject(Project project) {
         projectDao.update(project);
         syncToVectorStore(project);
+        systemLogService.info("Project", "更新项目: [" + project.getId() + "] " + project.getTitle());
     }
 
     @Transactional
@@ -52,6 +56,7 @@ public class ProjectService {
             vectorStore.delete(List.of("project_" + id));
         } catch (Exception ignore) {
         }
+        systemLogService.warn("Project", "删除项目: id=" + id);
     }
 
     private void syncToVectorStore(Project project) {

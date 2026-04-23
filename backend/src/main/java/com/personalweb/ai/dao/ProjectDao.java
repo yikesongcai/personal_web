@@ -27,6 +27,7 @@ public class ProjectDao {
         project.setFrameworks(rs.getString("frameworks"));
         project.setOnlineUrl(rs.getString("online_url"));
         project.setGithubUrl(rs.getString("github_url"));
+        project.setSummary(rs.getString("summary"));
         project.setContent(rs.getString("content"));
         project.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
         if (rs.getTimestamp("updated_at") != null) {
@@ -46,16 +47,16 @@ public class ProjectDao {
 
     public Long insert(Project project) {
         jdbcTemplate.update(
-            "INSERT INTO project (title, cover_image, frameworks, online_url, github_url, content) VALUES (?, ?, ?, ?, ?, ?)",
-            project.getTitle(), project.getCoverImage(), project.getFrameworks(), project.getOnlineUrl(), project.getGithubUrl(), project.getContent()
+            "INSERT INTO project (title, cover_image, frameworks, online_url, github_url, summary, content) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            project.getTitle(), project.getCoverImage(), project.getFrameworks(), project.getOnlineUrl(), project.getGithubUrl(), project.getSummary(), project.getContent()
         );
         return jdbcTemplate.queryForObject("SELECT LAST_INSERT_ID()", Long.class);
     }
 
     public void update(Project project) {
         jdbcTemplate.update(
-            "UPDATE project SET title=?, cover_image=?, frameworks=?, online_url=?, github_url=?, content=? WHERE id=?",
-            project.getTitle(), project.getCoverImage(), project.getFrameworks(), project.getOnlineUrl(), project.getGithubUrl(), project.getContent(), project.getId()
+            "UPDATE project SET title=?, cover_image=?, frameworks=?, online_url=?, github_url=?, summary=?, content=? WHERE id=?",
+            project.getTitle(), project.getCoverImage(), project.getFrameworks(), project.getOnlineUrl(), project.getGithubUrl(), project.getSummary(), project.getContent(), project.getId()
         );
     }
 

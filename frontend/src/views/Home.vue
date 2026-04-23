@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <main class="page">
     <section class="hero">
       <p class="kicker">SONG'S LAB</p>
@@ -19,8 +19,8 @@
       <div class="cards">
         <article class="card" v-for="project in projects.slice(0, 3)" :key="project.id" @click="$router.push('/projects/' + project.id)">
           <h3>{{ project.title }}</h3>
-          <p v-if="project.framework" class="tag">{{ project.framework }}</p>
-          <p>{{ project.description || '暂无描述' }}</p>
+          <p v-if="project.frameworks" class="tag">{{ project.frameworks }}</p>
+          <p>{{ project.summary || (project.content ? project.content.replace(/#+ /g, '').slice(0, 80) + '…' : '暂无描述') }}</p>
         </article>
       </div>
     </section>

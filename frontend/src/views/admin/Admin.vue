@@ -7,6 +7,7 @@
         <router-link to="/admin/projects">项目管理</router-link>
         <router-link to="/admin/articles">文章管理</router-link>
         <router-link to="/admin/rate-limit">速率白名单</router-link>
+        <router-link to="/admin/system-log">系统日志</router-link>
       </nav>
       <div class="sidebar-footer">
         <button class="logout-btn" @click="handleLogout">退出登录</button>

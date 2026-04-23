@@ -11,6 +11,30 @@ public class DataInitializer {
     @Bean
     public CommandLineRunner initData(JdbcTemplate jdbcTemplate) {
         return args -> {
+            // ---------- Schema migrations (safe, idempotent) ----------
+            // Add summary column to project if it doesn't exist yet
+            try {
+                jdbcTemplate.execute(
+                    "ALTER TABLE project ADD COLUMN IF NOT EXISTS summary VARCHAR(500) NULL AFTER github_url"
+                );
+            } catch (Exception e) {
+                System.err.println("[Migration] Could not add summary column (may already exist): " + e.getMessage());
+            }
+            // Create system_log table if missing
+            try {
+                jdbcTemplate.execute(
+                    "CREATE TABLE IF NOT EXISTS system_log (" +
+                    "  id BIGINT AUTO_INCREMENT PRIMARY KEY," +
+                    "  level VARCHAR(16) NOT NULL DEFAULT 'INFO'," +
+                    "  module VARCHAR(64) NOT NULL," +
+                    "  message TEXT NOT NULL," +
+                    "  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+                );
+            } catch (Exception e) {
+                System.err.println("[Migration] system_log table: " + e.getMessage());
+            }
+            // ----------------------------------------------------------
             // Check if projects exist
             Integer projectCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM project", Integer.class);
             if (projectCount != null && projectCount == 0) {

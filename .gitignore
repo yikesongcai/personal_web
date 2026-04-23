@@ -3,6 +3,10 @@
 .env.*
 !.env.example
 
+# Local Spring Boot profiles (contain secrets)
+**/application-local.yml
+**/application-local.properties
+
 # Java / Maven
 **/target/
 *.class

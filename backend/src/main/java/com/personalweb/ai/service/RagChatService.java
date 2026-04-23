@@ -14,6 +14,9 @@ import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.personalweb.ai.config.RagProperties;
@@ -26,23 +29,28 @@ import reactor.core.publisher.Flux;
 @Service
 public class RagChatService {
 
+    private static final Logger log = LoggerFactory.getLogger(RagChatService.class);
+
     private final VectorStore vectorStore;
     private final ChatClient chatClient;
     private final RagProperties ragProperties;
-        private final ChatHistoryService chatHistoryService;
-        private final ObjectMapper objectMapper;
+    private final ChatHistoryService chatHistoryService;
+    private final ObjectMapper objectMapper;
+    private final DailyStatsService dailyStatsService;
 
-        public RagChatService(
-                VectorStore vectorStore,
-                ChatClient.Builder chatClientBuilder,
-                RagProperties ragProperties,
-                ChatHistoryService chatHistoryService,
-                ObjectMapper objectMapper) {
+    public RagChatService(
+            VectorStore vectorStore,
+            ChatClient.Builder chatClientBuilder,
+            RagProperties ragProperties,
+            ChatHistoryService chatHistoryService,
+            ObjectMapper objectMapper,
+            DailyStatsService dailyStatsService) {
         this.vectorStore = vectorStore;
         this.chatClient = chatClientBuilder.build();
         this.ragProperties = ragProperties;
         this.chatHistoryService = chatHistoryService;
         this.objectMapper = objectMapper;
+        this.dailyStatsService = dailyStatsService;
     }
 
         public Flux<ServerSentEvent<String>> chat(ChatRequest requestPayload) {
@@ -88,11 +96,13 @@ public class RagChatService {
                         .event("token")
                         .data(delta)
                         .build())
-                .doOnComplete(() -> chatHistoryService.saveTurn(
-                        sessionId,
-                        question,
-                        answerBuilder.toString(),
-                        sourcesJson));
+                .doOnComplete(() -> {
+                    String answer = answerBuilder.toString();
+                    chatHistoryService.saveTurn(sessionId, question, answer, sourcesJson);
+                    // Estimate tokens: ~(prompt + answer) / 4 chars per token
+                    int estimatedTokens = (systemPrompt.length() + question.length() + answer.length()) / 4;
+                    dailyStatsService.addTokens(estimatedTokens);
+                });
 
         Flux<ServerSentEvent<String>> doneEvent = Flux.just(
                 ServerSentEvent.<String>builder()
@@ -104,6 +114,7 @@ public class RagChatService {
                 .concatWith(tokenEventStream)
                 .concatWith(doneEvent)
                 .onErrorResume(ex -> {
+                    log.error("AI chat failed, question={}", question, ex);
                     chatHistoryService.saveTurn(sessionId, question, "", sourcesJson);
                     return Flux.just(ServerSentEvent.<String>builder()
                             .event("error")

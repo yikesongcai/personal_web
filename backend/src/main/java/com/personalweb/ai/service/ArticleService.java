@@ -17,10 +17,12 @@ public class ArticleService {
 
     private final ArticleDao articleDao;
     private final VectorStore vectorStore;
+    private final SystemLogService systemLogService;
 
-    public ArticleService(ArticleDao articleDao, VectorStore vectorStore) {
+    public ArticleService(ArticleDao articleDao, VectorStore vectorStore, SystemLogService systemLogService) {
         this.articleDao = articleDao;
         this.vectorStore = vectorStore;
+        this.systemLogService = systemLogService;
     }
 
     public List<Article> listAll() {
@@ -36,6 +38,7 @@ public class ArticleService {
         Long id = articleDao.insert(article);
         article.setId(id);
         syncToVectorStore(article);
+        systemLogService.info("Article", "创建文章: [" + id + "] " + article.getTitle());
         return id;
     }
 
@@ -43,6 +46,7 @@ public class ArticleService {
     public void updateArticle(Article article) {
         articleDao.update(article);
         syncToVectorStore(article);
+        systemLogService.info("Article", "更新文章: [" + article.getId() + "] " + article.getTitle());
     }
 
     @Transactional
@@ -52,6 +56,7 @@ public class ArticleService {
             vectorStore.delete(List.of("article_" + id));
         } catch (Exception ignore) {
         }
+        systemLogService.warn("Article", "删除文章: id=" + id);
     }
 
     private void syncToVectorStore(Article article) {

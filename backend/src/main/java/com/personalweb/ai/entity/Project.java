@@ -9,6 +9,7 @@ public class Project {
     private String frameworks;
     private String onlineUrl;
     private String githubUrl;
+    private String summary;
     private String content;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -26,6 +27,8 @@ public class Project {
     public void setOnlineUrl(String onlineUrl) { this.onlineUrl = onlineUrl; }
     public String getGithubUrl() { return githubUrl; }
     public void setGithubUrl(String githubUrl) { this.githubUrl = githubUrl; }
+    public String getSummary() { return summary; }
+    public void setSummary(String summary) { this.summary = summary; }
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }
     public LocalDateTime getCreatedAt() { return createdAt; }

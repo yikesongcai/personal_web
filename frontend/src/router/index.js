@@ -20,7 +20,8 @@ const routes = [
       { path: 'dashboard', component: () => import('../views/admin/Dashboard.vue') },
       { path: 'projects', component: () => import('../views/admin/ProjectManage.vue') },
       { path: 'articles', component: () => import('../views/admin/ArticleManage.vue') },
-      { path: 'rate-limit', component: () => import('../views/admin/RateLimitManage.vue') }
+      { path: 'rate-limit', component: () => import('../views/admin/RateLimitManage.vue') },
+      { path: 'system-log', component: () => import('../views/admin/SystemLogManage.vue') }
     ]
   }
 ]
