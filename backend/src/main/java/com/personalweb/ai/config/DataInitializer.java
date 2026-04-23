@@ -12,13 +12,19 @@ public class DataInitializer {
     public CommandLineRunner initData(JdbcTemplate jdbcTemplate) {
         return args -> {
             // ---------- Schema migrations (safe, idempotent) ----------
-            // Add summary column to project if it doesn't exist yet
+            // Add summary column to project if it doesn't exist yet (compatible with older MySQL)
             try {
-                jdbcTemplate.execute(
-                    "ALTER TABLE project ADD COLUMN IF NOT EXISTS summary VARCHAR(500) NULL AFTER github_url"
+                Integer summaryExists = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM information_schema.COLUMNS " +
+                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'project' AND COLUMN_NAME = 'summary'",
+                    Integer.class
                 );
+                if (summaryExists == null || summaryExists == 0) {
+                    jdbcTemplate.execute("ALTER TABLE project ADD COLUMN summary VARCHAR(500) NULL AFTER github_url");
+                    System.out.println("[Migration] Added summary column to project table.");
+                }
             } catch (Exception e) {
-                System.err.println("[Migration] Could not add summary column (may already exist): " + e.getMessage());
+                System.err.println("[Migration] summary column migration failed: " + e.getMessage());
             }
             // Create system_log table if missing
             try {

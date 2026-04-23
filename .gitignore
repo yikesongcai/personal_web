@@ -25,5 +25,13 @@ Thumbs.db
 # Logs
 *.log
 
+# Cache
+.cache
+.png
+.jpg
+.jpeg
+.gif
+.webp
+
 # Local database
 backend/data/
