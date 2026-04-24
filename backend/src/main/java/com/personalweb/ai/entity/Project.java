@@ -11,6 +11,9 @@ public class Project {
     private String githubUrl;
     private String summary;
     private String content;
+    private Integer sortOrder;
+    private Boolean isFeatured;
+    private Boolean deleted;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
@@ -31,6 +34,12 @@ public class Project {
     public void setSummary(String summary) { this.summary = summary; }
     public String getContent() { return content; }
     public void setContent(String content) { this.content = content; }
+    public Integer getSortOrder() { return sortOrder; }
+    public void setSortOrder(Integer sortOrder) { this.sortOrder = sortOrder; }
+    public Boolean getIsFeatured() { return isFeatured; }
+    public void setIsFeatured(Boolean isFeatured) { this.isFeatured = isFeatured; }
+    public Boolean getDeleted() { return deleted; }
+    public void setDeleted(Boolean deleted) { this.deleted = deleted; }
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

@@ -1,9 +1,9 @@
 <template>
   <main class="page">
     <section class="hero">
-      <p class="kicker">SONG'S LAB</p>
-      <h1>Personal Web Portfolio</h1>
-      <p>聚合项目作品、技术文章与研究笔记，并通过 RAG 助手实现自然语言导览。</p>
+      <p class="kicker">{{ config.hero_kicker || "SONG'S LAB" }}</p>
+      <h1>{{ config.hero_title || 'Personal Web Portfolio' }}</h1>
+      <p>{{ config.hero_subtitle || '聚合项目作品、技术文章与研究笔记，并通过 RAG 助手实现自然语言导览。' }}</p>
 
       <div class="hero-actions">
         <router-link class="btn primary" to="/projects">浏览项目</router-link>
@@ -13,11 +13,11 @@
 
     <section id="projects" class="section">
       <div class="section-title">
-        <h2>项目精选</h2>
-        <p>围绕 AI 系统、联邦学习安全与工程效率的长期实践。(最新内容)</p>
+        <h2>{{ config.projects_section_title || '项目精选' }}</h2>
+        <p>{{ config.projects_section_subtitle || '' }}</p>
       </div>
       <div class="cards">
-        <article class="card" v-for="project in projects.slice(0, 3)" :key="project.id" @click="$router.push('/projects/' + project.id)">
+        <article class="card" v-for="project in projects" :key="project.id" @click="$router.push('/projects/' + project.id)">
           <h3>{{ project.title }}</h3>
           <p v-if="project.frameworks" class="tag">{{ project.frameworks }}</p>
           <p>{{ project.summary || (project.content ? project.content.replace(/#+ /g, '').slice(0, 80) + '…' : '暂无描述') }}</p>
@@ -27,11 +27,11 @@
 
     <section id="articles" class="section">
       <div class="section-title">
-        <h2>最新文章</h2>
-        <p>记录系统设计、工程复盘与模型落地经验。</p>
+        <h2>{{ config.articles_section_title || '最新文章' }}</h2>
+        <p>{{ config.articles_section_subtitle || '' }}</p>
       </div>
       <div class="cards">
-        <article class="card" v-for="article in articles.slice(0, 3)" :key="article.id" @click="$router.push('/articles/' + article.id)">
+        <article class="card" v-for="article in articles" :key="article.id" @click="$router.push('/articles/' + article.id)">
           <h3>{{ article.title }}</h3>
           <p>{{ new Date(article.createdAt).toLocaleDateString() }}</p>
         </article>
@@ -46,15 +46,17 @@ import { ref, onMounted } from 'vue'
 
 const projects = ref([])
 const articles = ref([])
+const config = ref({})
 
 onMounted(async () => {
   try {
-    const [pRes, aRes] = await Promise.all([
-      fetch('/api/projects'),
-      fetch('/api/articles')
-    ])
-    if(pRes.ok) projects.value = await pRes.json()
-    if(aRes.ok) articles.value = await aRes.json()
+    const res = await fetch('/api/home')
+    if (res.ok) {
+      const data = await res.json()
+      projects.value = data.projects || []
+      articles.value = data.articles || []
+      config.value = data.config || {}
+    }
   } catch(e) {
     console.error(e)
   }

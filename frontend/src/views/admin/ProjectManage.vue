@@ -10,7 +10,13 @@
       <table>
         <thead>
           <tr>
-            <th>ID</th><th>项目标题</th><th>使用框架</th><th>创建时间</th><th>操作</th>
+            <th style="width:50px">ID</th>
+            <th>项目标题</th>
+            <th style="width:130px">使用框架</th>
+            <th style="width:60px">排序</th>
+            <th style="width:60px">精选</th>
+            <th style="width:110px">创建时间</th>
+            <th style="width:110px">操作</th>
           </tr>
         </thead>
         <tbody>
@@ -18,6 +24,8 @@
             <td>{{ item.id }}</td>
             <td>{{ item.title }}</td>
             <td>{{ item.frameworks }}</td>
+            <td>{{ item.sortOrder }}</td>
+            <td><span :class="['badge', item.isFeatured ? 'featured' : 'normal']">{{ item.isFeatured ? '⭐精选' : '普通' }}</span></td>
             <td>{{ new Date(item.createdAt).toLocaleDateString() }}</td>
             <td class="actions">
               <button class="btn-sm" @click="openForm(item)">编辑</button>
@@ -57,6 +65,19 @@
           </div>
           <input v-if="!isClosedSource" v-model="formData.githubUrl" placeholder="https://github.com/user/repo" style="margin-top:8px" />
         </div>
+          <div class="form-row">
+            <div class="form-group" style="flex:1">
+              <label>显示排序 (Sort Order) <small style="color:#94a3b8">数字越小迆靠前</small></label>
+              <input type="number" v-model.number="formData.sortOrder" min="0" style="max-width:120px" />
+            </div>
+            <div class="form-group" style="flex:1">
+              <label>设为首页精选</label>
+              <div class="checkbox-row">
+                <input type="checkbox" id="isFeatured" v-model="formData.isFeatured" />
+                <label for="isFeatured" class="checkbox-label">⭐ 设为首页精选展示</label>
+              </div>
+            </div>
+          </div>
           <div class="form-group">
             <label>封面图片 (Cover)</label>
             <input type="file" @change="uploadCover" accept="image/*" />
@@ -98,7 +119,7 @@ const openForm = (item = null) => {
     formData.value = { ...item }
     isClosedSource.value = item.githubUrl === null || item.githubUrl === ''
   } else {
-    formData.value = { title: '', frameworks: '', onlineUrl: '', githubUrl: '', coverImage: '', content: '' }
+    formData.value = { title: '', frameworks: '', onlineUrl: '', githubUrl: '', coverImage: '', content: '', sortOrder: 0, isFeatured: false }
     isClosedSource.value = false
   }
   showForm.value = true
@@ -197,4 +218,8 @@ td { color: #334155; font-size: 15px; }
 .checkbox-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
 .checkbox-row input[type="checkbox"] { width: 16px; height: 16px; cursor: pointer; accent-color: #0ea5e9; }
 .checkbox-label { font-size: 13px; color: #475569; cursor: pointer; }
+.form-row { display: flex; gap: 1rem; align-items: flex-start; margin-bottom: 1.2rem; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 500; }
+.badge.featured { background: #fef9c3; color: #92400e; }
+.badge.normal { background: #f1f5f9; color: #64748b; }
 </style>

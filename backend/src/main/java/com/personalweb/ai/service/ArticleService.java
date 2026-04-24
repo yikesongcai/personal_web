@@ -29,6 +29,10 @@ public class ArticleService {
         return articleDao.findAll();
     }
 
+    public List<Article> listFeatured() {
+        return articleDao.findFeatured();
+    }
+
     public Article getById(Long id) {
         return articleDao.findById(id);
     }

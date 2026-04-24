@@ -18,6 +18,7 @@ const routes = [
     meta: { requiresAuth: true },
     children: [
       { path: 'dashboard', component: () => import('../views/admin/Dashboard.vue') },
+      { path: 'homepage', component: () => import('../views/admin/HomepageManage.vue') },
       { path: 'projects', component: () => import('../views/admin/ProjectManage.vue') },
       { path: 'articles', component: () => import('../views/admin/ArticleManage.vue') },
       { path: 'rate-limit', component: () => import('../views/admin/RateLimitManage.vue') },

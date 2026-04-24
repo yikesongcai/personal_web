@@ -29,6 +29,10 @@ public class ProjectService {
         return projectDao.findAll();
     }
 
+    public List<Project> listFeatured() {
+        return projectDao.findFeatured();
+    }
+
     public Project getById(Long id) {
         return projectDao.findById(id);
     }

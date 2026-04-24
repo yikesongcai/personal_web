@@ -40,6 +40,36 @@ public class DataInitializer {
             } catch (Exception e) {
                 System.err.println("[Migration] system_log table: " + e.getMessage());
             }
+            // Add sort_order, is_featured, deleted to project
+            migrateColumn(jdbcTemplate, "project", "sort_order", "ALTER TABLE project ADD COLUMN sort_order INT NOT NULL DEFAULT 0 AFTER summary");
+            migrateColumn(jdbcTemplate, "project", "is_featured", "ALTER TABLE project ADD COLUMN is_featured TINYINT(1) NOT NULL DEFAULT 0 AFTER sort_order");
+            migrateColumn(jdbcTemplate, "project", "deleted", "ALTER TABLE project ADD COLUMN deleted TINYINT(1) NOT NULL DEFAULT 0 AFTER is_featured");
+            // Add sort_order, is_featured, deleted to article
+            migrateColumn(jdbcTemplate, "article", "sort_order", "ALTER TABLE article ADD COLUMN sort_order INT NOT NULL DEFAULT 0 AFTER tags");
+            migrateColumn(jdbcTemplate, "article", "is_featured", "ALTER TABLE article ADD COLUMN is_featured TINYINT(1) NOT NULL DEFAULT 0 AFTER sort_order");
+            migrateColumn(jdbcTemplate, "article", "deleted", "ALTER TABLE article ADD COLUMN deleted TINYINT(1) NOT NULL DEFAULT 0 AFTER is_featured");
+            // Create site_config table
+            try {
+                jdbcTemplate.execute(
+                    "CREATE TABLE IF NOT EXISTS site_config (" +
+                    "  id BIGINT AUTO_INCREMENT PRIMARY KEY," +
+                    "  config_key VARCHAR(64) NOT NULL UNIQUE," +
+                    "  config_value TEXT," +
+                    "  description VARCHAR(255)," +
+                    "  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+                );
+                // Seed default site_config values
+                String[] keys = {"hero_kicker","hero_title","hero_subtitle","projects_section_title","projects_section_subtitle","articles_section_title","articles_section_subtitle"};
+                String[] vals = {"SONG'S LAB","Personal Web Portfolio","聚合项目作品、技术文章与研究笔记，并通过 RAG 助手实现自然语言导览。","项目精选","围绕 AI 系统、联邦学习安全与工程效率的长期实践。","最新文章","记录系统设计、工程复盘与模型落地经验。"};
+                for (int i = 0; i < keys.length; i++) {
+                    jdbcTemplate.update(
+                        "INSERT INTO site_config (config_key, config_value) VALUES (?, ?) ON DUPLICATE KEY UPDATE config_key = config_key",
+                        keys[i], vals[i]);
+                }
+            } catch (Exception e) {
+                System.err.println("[Migration] site_config table: " + e.getMessage());
+            }
             // ----------------------------------------------------------
             // Check if projects exist
             Integer projectCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM project", Integer.class);
@@ -87,5 +117,23 @@ public class DataInitializer {
                 System.out.println("Inserted mock rate_limit_whitelist.");
             }
         };
+    }
+
+    /** Check if a column exists in a table; run the ALTER only if missing */
+    private static void migrateColumn(org.springframework.jdbc.core.JdbcTemplate jdbcTemplate,
+                                      String table, String column, String ddl) {
+        try {
+            Integer count = jdbcTemplate.queryForObject(
+                "SELECT COUNT(*) FROM information_schema.COLUMNS " +
+                "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?",
+                Integer.class, table, column
+            );
+            if (count == null || count == 0) {
+                jdbcTemplate.execute(ddl);
+                System.out.println("[Migration] Added column " + column + " to " + table);
+            }
+        } catch (Exception e) {
+            System.err.println("[Migration] " + table + "." + column + ": " + e.getMessage());
+        }
     }
 }

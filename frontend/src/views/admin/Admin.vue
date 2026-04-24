@@ -4,6 +4,7 @@
       <h2>控制中心 (Admin)</h2>
       <nav>
         <router-link to="/admin/dashboard">仪表盘概览</router-link>
+        <router-link to="/admin/homepage">🏠 首页内容管理</router-link>
         <router-link to="/admin/projects">项目管理</router-link>
         <router-link to="/admin/articles">文章管理</router-link>
         <router-link to="/admin/rate-limit">速率白名单</router-link>
