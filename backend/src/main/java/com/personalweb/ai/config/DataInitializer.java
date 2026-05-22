@@ -70,6 +70,22 @@ public class DataInitializer {
             } catch (Exception e) {
                 System.err.println("[Migration] site_config table: " + e.getMessage());
             }
+            // Create knowledge_chunk table
+            try {
+                jdbcTemplate.execute(
+                    "CREATE TABLE IF NOT EXISTS knowledge_chunk (" +
+                    "  id BIGINT AUTO_INCREMENT PRIMARY KEY," +
+                    "  doc_id VARCHAR(128) NOT NULL," +
+                    "  doc_type VARCHAR(32) NOT NULL," +
+                    "  title VARCHAR(256) NOT NULL," +
+                    "  content TEXT," +
+                    "  chunk_index INT DEFAULT 0," +
+                    "  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP" +
+                    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci"
+                );
+            } catch (Exception e) {
+                System.err.println("[Migration] knowledge_chunk table: " + e.getMessage());
+            }
             // ----------------------------------------------------------
             // Check if projects exist
             Integer projectCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM project", Integer.class);
@@ -92,22 +108,6 @@ public class DataInitializer {
                 System.out.println("Inserted mock articles.");
             }
 
-            // Check if daily_stats exist
-            Integer statsCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM daily_stats", Integer.class);
-            if (statsCount != null && statsCount == 0) {
-                jdbcTemplate.update("INSERT INTO daily_stats (record_date, tokens, visits) VALUES " +
-                        "('2026-04-01', 12500, 120)," +
-                        "('2026-04-02', 15000, 145)," +
-                        "('2026-04-03', 11000, 110)," +
-                        "('2026-04-04', 18000, 190)," +
-                        "('2026-04-05', 22000, 210)," +
-                        "('2026-04-06', 17500, 160)," +
-                        "('2026-04-07', 16000, 150)," +
-                        "('2026-04-08', 21000, 230)," +
-                        "('2026-04-09', 19000, 180)," +
-                        "('2026-04-10', 8500,  95)");
-                System.out.println("Inserted mock daily_stats.");
-            }
             // Check if rate_limit_whitelist exist
             Integer whitelistCount = jdbcTemplate.queryForObject("SELECT COUNT(*) FROM rate_limit_whitelist", Integer.class);
             if (whitelistCount != null && whitelistCount == 0) {

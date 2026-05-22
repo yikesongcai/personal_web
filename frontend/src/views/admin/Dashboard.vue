@@ -1,41 +1,40 @@
 <template>
   <div class="dashboard">
     <div class="header">
-      <h2>控制台概览 (Dashboard)</h2>
+      <h2>控制台概览</h2>
     </div>
 
-    <!-- Cards Section -->
     <div class="cards-wrapper">
       <div class="card stat-card">
-        <div class="icon">🎟️</div>
+        <div class="icon token"><FireOutlined /></div>
         <div class="info">
           <span>总 Token 消耗</span>
           <h3>{{ formatTokens(summary.totalTokens) }}</h3>
         </div>
       </div>
       <div class="card stat-card">
-        <div class="icon">👀</div>
+        <div class="icon visits"><EyeOutlined /></div>
         <div class="info">
           <span>全站访问人次</span>
           <h3>{{ summary.totalVisits }}</h3>
         </div>
       </div>
       <div class="card stat-card">
-        <div class="icon">💬</div>
+        <div class="icon chat"><WechatOutlined /></div>
         <div class="info">
           <span>AI 对话总数</span>
           <h3>{{ summary.chatCount }}</h3>
         </div>
       </div>
       <div class="card stat-card">
-        <div class="icon">📦</div>
+        <div class="icon project"><FolderOutlined /></div>
         <div class="info">
           <span>项目总数</span>
           <h3>{{ summary.projectCount }}</h3>
         </div>
       </div>
       <div class="card stat-card">
-        <div class="icon">📝</div>
+        <div class="icon article"><EditOutlined /></div>
         <div class="info">
           <span>文章总数</span>
           <h3>{{ summary.articleCount }}</h3>
@@ -43,9 +42,7 @@
       </div>
     </div>
 
-    <!-- Charts Section -->
     <div class="charts-wrapper">
-      <!-- Token Chart -->
       <div class="chart-card">
         <div class="chart-header">
           <h3>Token 消耗统计</h3>
@@ -58,7 +55,6 @@
         <div class="chart-body" ref="tokenChartRef"></div>
       </div>
 
-      <!-- Visits Chart -->
       <div class="chart-card">
         <div class="chart-header">
           <h3>访问流量统计</h3>
@@ -77,6 +73,7 @@
 <script setup>
 import { ref, onMounted, nextTick } from 'vue'
 import * as echarts from 'echarts'
+import { FireOutlined, EyeOutlined, WechatOutlined, FolderOutlined, EditOutlined } from '@ant-design/icons-vue'
 
 const filterToken = ref('day')
 const filterVisits = ref('day')
@@ -170,16 +167,20 @@ onMounted(async () => {
   gap: 1.2rem;
 }
 .stat-card .icon {
-  font-size: 2.5rem;
-  background: #f1f5f9;
-  width: 60px;
-  height: 60px;
+  font-size: 1.6rem;
+  width: 56px;
+  height: 56px;
   display: flex;
   justify-content: center;
   align-items: center;
   border-radius: 12px;
   flex-shrink: 0;
 }
+.icon.token { background: #fef3c7; color: #f59e0b; }
+.icon.visits { background: #dbeafe; color: #3b82f6; }
+.icon.chat { background: #dcfce7; color: #22c55e; }
+.icon.project { background: #ede9fe; color: #8b5cf6; }
+.icon.article { background: #fce7f3; color: #ec4899; }
 .stat-card .info span { color: #64748b; font-size: 0.9rem; font-weight: 500; }
 .stat-card .info h3 { margin: 6px 0 0; font-size: 1.8rem; color: #0f172a; }
 
@@ -228,4 +229,3 @@ onMounted(async () => {
   height: 300px;
 }
 </style>
-

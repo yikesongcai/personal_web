@@ -35,3 +35,9 @@ Thumbs.db
 
 # Local database
 backend/data/
+
+# Runtime uploads
+backend/uploads/
+
+# Chroma vector store data
+chroma-data/

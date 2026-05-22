@@ -9,7 +9,9 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.personalweb.ai.dao.KnowledgeChunkDao;
 import com.personalweb.ai.dao.ProjectDao;
+import com.personalweb.ai.entity.KnowledgeChunk;
 import com.personalweb.ai.entity.Project;
 
 @Service
@@ -17,11 +19,14 @@ public class ProjectService {
 
     private final ProjectDao projectDao;
     private final VectorStore vectorStore;
+    private final KnowledgeChunkDao knowledgeChunkDao;
     private final SystemLogService systemLogService;
 
-    public ProjectService(ProjectDao projectDao, VectorStore vectorStore, SystemLogService systemLogService) {
+    public ProjectService(ProjectDao projectDao, VectorStore vectorStore,
+                          KnowledgeChunkDao knowledgeChunkDao, SystemLogService systemLogService) {
         this.projectDao = projectDao;
         this.vectorStore = vectorStore;
+        this.knowledgeChunkDao = knowledgeChunkDao;
         this.systemLogService = systemLogService;
     }
 
@@ -56,14 +61,20 @@ public class ProjectService {
     @Transactional
     public void deleteProject(Long id) {
         projectDao.delete(id);
+        String docId = "project_" + id;
         try {
-            vectorStore.delete(List.of("project_" + id));
+            vectorStore.delete(List.of(docId));
+        } catch (Exception ignore) {
+        }
+        try {
+            knowledgeChunkDao.deleteByDocId(docId);
         } catch (Exception ignore) {
         }
         systemLogService.warn("Project", "删除项目: id=" + id);
     }
 
-    private void syncToVectorStore(Project project) {
+    public void syncToVectorStore(Project project) {
+        String docId = "project_" + project.getId();
         String content = """
                 项目名称: %s
                 框架: %s
@@ -78,12 +89,22 @@ public class ProjectService {
         metadata.put("title", project.getTitle());
         metadata.put("url", "/projects/" + project.getId());
 
-        Document doc = new Document("project_" + project.getId(), content, metadata);
-        
+        Document doc = new Document(docId, content, metadata);
+
         try {
-            vectorStore.delete(List.of(doc.getId()));
+            vectorStore.delete(List.of(docId));
         } catch (Exception ignore) {}
-        
+
         vectorStore.add(List.of(doc));
+
+        // Mirror to MySQL
+        knowledgeChunkDao.deleteByDocId(docId);
+        KnowledgeChunk chunk = new KnowledgeChunk();
+        chunk.setDocId(docId);
+        chunk.setDocType("project");
+        chunk.setTitle(project.getTitle());
+        chunk.setContent(content);
+        chunk.setChunkIndex(0);
+        knowledgeChunkDao.insert(chunk);
     }
 }

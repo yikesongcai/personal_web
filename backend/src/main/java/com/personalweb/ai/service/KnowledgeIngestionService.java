@@ -13,7 +13,9 @@ import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Service;
 
+import com.personalweb.ai.dao.KnowledgeChunkDao;
 import com.personalweb.ai.dto.KnowledgeItemRequest;
+import com.personalweb.ai.entity.KnowledgeChunk;
 
 @Service
 public class KnowledgeIngestionService {
@@ -22,10 +24,13 @@ public class KnowledgeIngestionService {
 
     private final VectorStore vectorStore;
     private final EmbeddingModel embeddingModel;
+    private final KnowledgeChunkDao knowledgeChunkDao;
 
-    public KnowledgeIngestionService(VectorStore vectorStore, EmbeddingModel embeddingModel) {
+    public KnowledgeIngestionService(VectorStore vectorStore, EmbeddingModel embeddingModel,
+                                      KnowledgeChunkDao knowledgeChunkDao) {
         this.vectorStore = vectorStore;
         this.embeddingModel = embeddingModel;
+        this.knowledgeChunkDao = knowledgeChunkDao;
     }
 
     public void ingestMockProject() {
@@ -88,10 +93,27 @@ public class KnowledgeIngestionService {
 
         for (Document doc : splitDocuments) {
             float[] vector = embeddingModel.embed(doc.getText());
-            log.info("Mock 文档切片向量维度: {}", vector.length);
+            log.info("文档切片向量维度: {}", vector.length);
         }
 
         vectorStore.add(splitDocuments);
+
+        // Mirror to MySQL for admin management
+        for (int i = 0; i < splitDocuments.size(); i++) {
+            Document doc = splitDocuments.get(i);
+            KnowledgeChunk chunk = new KnowledgeChunk();
+            chunk.setDocId(doc.getId());
+            chunk.setDocType(String.valueOf(doc.getMetadata().getOrDefault("sourceType", "unknown")));
+            chunk.setTitle(String.valueOf(doc.getMetadata().getOrDefault("title", "未命名")));
+            chunk.setContent(doc.getText());
+            chunk.setChunkIndex(i);
+            try {
+                knowledgeChunkDao.insert(chunk);
+            } catch (Exception e) {
+                log.warn("镜像写入 knowledge_chunk 失败: {}", e.getMessage());
+            }
+        }
+
         log.info("知识入库完成，切片数量: {}", splitDocuments.size());
         return splitDocuments.size();
     }

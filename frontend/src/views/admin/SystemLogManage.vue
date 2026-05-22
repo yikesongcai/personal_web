@@ -11,7 +11,7 @@
             @click="changeLevel(lv)"
           >{{ lv }}</button>
         </div>
-        <button class="btn danger" @click="clearLogs">🗑 清空日志</button>
+        <button class="btn danger" @click="clearLogs"><DeleteOutlined /> 清空日志</button>
       </div>
     </div>
 
@@ -52,6 +52,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { DeleteOutlined } from '@ant-design/icons-vue'
 
 const levels = ['ALL', 'INFO', 'WARN', 'ERROR']
 const currentLevel = ref('ALL')

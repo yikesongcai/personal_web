@@ -25,7 +25,7 @@
             <td>{{ item.title }}</td>
             <td>{{ item.tags }}</td>
             <td>{{ item.sortOrder }}</td>
-            <td><span :class="['badge', item.isFeatured ? 'featured' : 'normal']">{{ item.isFeatured ? '⭐精选' : '普通' }}</span></td>
+            <td><span :class="['badge', item.isFeatured ? 'featured' : 'normal']"><StarFilled v-if="item.isFeatured" style="color:#f59e0b;font-size:13px;margin-right:2px" />{{ item.isFeatured ? '精选' : '普通' }}</span></td>
             <td>{{ new Date(item.createdAt).toLocaleDateString() }}</td>
             <td class="actions">
               <button class="btn-sm" @click="openForm(item)">编辑</button>
@@ -62,7 +62,7 @@
               <label>设为首页精选</label>
               <div class="checkbox-row">
                 <input type="checkbox" id="articleFeatured" v-model="formData.isFeatured" />
-                <label for="articleFeatured" class="checkbox-label">⭐ 设为首页精选展示</label>
+                <label for="articleFeatured" class="checkbox-label">设为首页精选展示</label>
               </div>
             </div>
           </div>
@@ -82,6 +82,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { StarFilled } from '@ant-design/icons-vue'
 
 const items = ref([])
 const showForm = ref(false)

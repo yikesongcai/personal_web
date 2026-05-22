@@ -1,5 +1,8 @@
 package com.personalweb.ai.service;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
@@ -7,15 +10,13 @@ import org.springframework.stereotype.Service;
 public class DailyStatsService {
 
     private final JdbcTemplate jdbcTemplate;
+    private final ConcurrentHashMap<String, Long> visitCache = new ConcurrentHashMap<>();
 
     public DailyStatsService(JdbcTemplate jdbcTemplate) {
         this.jdbcTemplate = jdbcTemplate;
     }
 
-    /**
-     * Add token consumption for today.
-     * Uses INSERT ... ON DUPLICATE KEY UPDATE for atomicity.
-     */
+    /** Add token consumption for today (atomic upsert). */
     public void addTokens(int tokens) {
         if (tokens <= 0) return;
         try {
@@ -29,10 +30,16 @@ public class DailyStatsService {
         }
     }
 
-    /**
-     * Add a visit count for today.
-     */
-    public void addVisit() {
+    /** Add a visit count for today, with IP deduplication (30-min window). */
+    public void addVisit(String ip) {
+        if (ip == null || ip.isBlank()) return;
+        long now = System.currentTimeMillis();
+        Long last = visitCache.putIfAbsent(ip, now);
+        if (last != null && (now - last) < TimeUnit.MINUTES.toMillis(30)) {
+            return; // dedup: same IP within 30 min
+        }
+        // refresh timestamp and count
+        visitCache.put(ip, now);
         try {
             jdbcTemplate.update(
                 "INSERT INTO daily_stats (record_date, tokens, visits) VALUES (CURDATE(), 0, 1) " +

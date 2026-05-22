@@ -99,8 +99,20 @@ public class RagChatService {
                 .doOnComplete(() -> {
                     String answer = answerBuilder.toString();
                     chatHistoryService.saveTurn(sessionId, question, answer, sourcesJson);
-                    // Estimate tokens: ~(prompt + answer) / 4 chars per token
-                    int estimatedTokens = (systemPrompt.length() + question.length() + answer.length()) / 4;
+                    // Token estimation: ~1 CJK char ≈ 1.5 tokens, ~4 ASCII chars ≈ 1 token
+                    String combined = systemPrompt + question + answer;
+                    int ascii = 0, cjk = 0;
+                    for (char c : combined.toCharArray()) {
+                        if (Character.UnicodeBlock.of(c) == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS
+                            || Character.UnicodeBlock.of(c) == Character.UnicodeBlock.CJK_COMPATIBILITY_IDEOGRAPHS
+                            || Character.UnicodeBlock.of(c) == Character.UnicodeBlock.CJK_UNIFIED_IDEOGRAPHS_EXTENSION_A) {
+                            cjk++;
+                        } else if (c < 128) {
+                            ascii++;
+                        }
+                    }
+                    int other = combined.length() - ascii - cjk;
+                    int estimatedTokens = (int) (cjk / 1.5 + ascii / 4.0 + other / 3.0);
                     dailyStatsService.addTokens(estimatedTokens);
                 });
 

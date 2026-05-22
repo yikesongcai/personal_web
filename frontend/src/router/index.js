@@ -22,7 +22,10 @@ const routes = [
       { path: 'projects', component: () => import('../views/admin/ProjectManage.vue') },
       { path: 'articles', component: () => import('../views/admin/ArticleManage.vue') },
       { path: 'rate-limit', component: () => import('../views/admin/RateLimitManage.vue') },
-      { path: 'system-log', component: () => import('../views/admin/SystemLogManage.vue') }
+      { path: 'system-log', component: () => import('../views/admin/SystemLogManage.vue') },
+      { path: 'knowledge', component: () => import('../views/admin/KnowledgeManage.vue') },
+      { path: 'chat-history', component: () => import('../views/admin/ChatHistoryManage.vue') },
+      { path: 'ai-config', component: () => import('../views/admin/AIConfig.vue') }
     ]
   }
 ]

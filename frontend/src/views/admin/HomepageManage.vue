@@ -2,12 +2,12 @@
   <div class="manage-page">
     <div class="header">
       <h2>首页内容管理 (Homepage)</h2>
-      <button class="btn primary" @click="saveAll" :disabled="saving">{{ saving ? '保存中…' : '💾 保存所有设置' }}</button>
+      <button class="btn primary" @click="saveAll" :disabled="saving">{{ saving ? '保存中…' : '保存所有设置' }} <SaveOutlined /></button>
     </div>
 
     <!-- Hero Section -->
     <div class="section-card">
-      <h3 class="section-label">🏠 Hero 区域</h3>
+      <h3 class="section-label"><HomeOutlined /> Hero 区域</h3>
       <div class="form-grid">
         <div class="form-group">
           <label>顶部小标题 (Kicker)</label>
@@ -41,7 +41,7 @@
 
       <div class="mini-list">
         <div v-for="p in featuredProjects" :key="p.id" class="mini-item">
-          <span class="star">⭐</span>
+          <StarFilled class="star-icon" />
           <span class="title">{{ p.title }}</span>
           <span class="tag" v-if="p.frameworks">{{ p.frameworks }}</span>
           <span class="order">排序: {{ p.sortOrder }}</span>
@@ -67,7 +67,7 @@
 
       <div class="mini-list">
         <div v-for="a in featuredArticles" :key="a.id" class="mini-item">
-          <span class="star">⭐</span>
+          <StarFilled class="star-icon" />
           <span class="title">{{ a.title }}</span>
           <span class="tag" v-if="a.tags">{{ a.tags }}</span>
           <span class="order">排序: {{ a.sortOrder }}</span>
@@ -80,6 +80,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { HomeOutlined, SaveOutlined, StarFilled } from '@ant-design/icons-vue'
 
 const adminToken = sessionStorage.getItem('adminToken')
 const config = ref({
@@ -151,7 +152,7 @@ onMounted(fetchAll)
 
 .mini-list { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
 .mini-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #f8fafc; border-radius: 6px; font-size: 13px; }
-.star { font-size: 14px; }
+.star-icon { font-size: 14px; color: #f59e0b; }
 .title { font-weight: 500; color: #0f172a; flex: 1; }
 .tag { background: #e0f2fe; color: #0284c7; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
 .order { color: #94a3b8; font-size: 12px; }

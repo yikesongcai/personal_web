@@ -1,4 +1,4 @@
-﻿# ---- 第一阶段：Maven 编译 ----
+# ---- 第一阶段：Maven 编译 ----
 FROM maven:3.9.6-eclipse-temurin-17-alpine AS build-stage
 WORKDIR /app
 COPY pom.xml .

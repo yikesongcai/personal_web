@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ant-design/icons-vue": "^7.0.1",
     "dompurify": "^3.3.3",
     "echarts": "^6.0.0",
     "marked": "^18.0.0",

@@ -10,18 +10,23 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.personalweb.ai.dao.ArticleDao;
+import com.personalweb.ai.dao.KnowledgeChunkDao;
 import com.personalweb.ai.entity.Article;
+import com.personalweb.ai.entity.KnowledgeChunk;
 
 @Service
 public class ArticleService {
 
     private final ArticleDao articleDao;
     private final VectorStore vectorStore;
+    private final KnowledgeChunkDao knowledgeChunkDao;
     private final SystemLogService systemLogService;
 
-    public ArticleService(ArticleDao articleDao, VectorStore vectorStore, SystemLogService systemLogService) {
+    public ArticleService(ArticleDao articleDao, VectorStore vectorStore,
+                          KnowledgeChunkDao knowledgeChunkDao, SystemLogService systemLogService) {
         this.articleDao = articleDao;
         this.vectorStore = vectorStore;
+        this.knowledgeChunkDao = knowledgeChunkDao;
         this.systemLogService = systemLogService;
     }
 
@@ -56,14 +61,20 @@ public class ArticleService {
     @Transactional
     public void deleteArticle(Long id) {
         articleDao.delete(id);
+        String docId = "article_" + id;
         try {
-            vectorStore.delete(List.of("article_" + id));
+            vectorStore.delete(List.of(docId));
+        } catch (Exception ignore) {
+        }
+        try {
+            knowledgeChunkDao.deleteByDocId(docId);
         } catch (Exception ignore) {
         }
         systemLogService.warn("Article", "删除文章: id=" + id);
     }
 
-    private void syncToVectorStore(Article article) {
+    public void syncToVectorStore(Article article) {
+        String docId = "article_" + article.getId();
         String content = """
                 文章标题: %s
                 标签: %s
@@ -77,12 +88,22 @@ public class ArticleService {
         metadata.put("title", article.getTitle());
         metadata.put("url", "/articles/" + article.getId());
 
-        Document doc = new Document("article_" + article.getId(), content, metadata);
-        
+        Document doc = new Document(docId, content, metadata);
+
         try {
-            vectorStore.delete(List.of(doc.getId()));
+            vectorStore.delete(List.of(docId));
         } catch (Exception ignore) {}
-        
+
         vectorStore.add(List.of(doc));
+
+        // Mirror to MySQL
+        knowledgeChunkDao.deleteByDocId(docId);
+        KnowledgeChunk chunk = new KnowledgeChunk();
+        chunk.setDocId(docId);
+        chunk.setDocType("article");
+        chunk.setTitle(article.getTitle());
+        chunk.setContent(content);
+        chunk.setChunkIndex(0);
+        knowledgeChunkDao.insert(chunk);
     }
 }
