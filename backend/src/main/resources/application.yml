@@ -6,7 +6,7 @@ spring:
     name: personal-web-ai
 
   datasource:
-    url: ${DB_URL}
+    url: ${DB_URL:${SPRING_DATASOURCE_URL}}
     username: ${DB_USER}
     password: ${DB_PASSWORD}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -31,11 +31,11 @@ spring:
       type: chroma
       chroma:
         client:
-          host: http://${CHROMA_HOST:localhost}
-          port: ${CHROMA_PORT:8000}
+          host: http://${CHROMA_HOST:10.16.11.197}
+          port: ${CHROMA_PORT:8001}
         collection-name: ${CHROMA_COLLECTION_NAME:personal-portfolio}
-        tenant-name: "default_tenant"
-        database-name: "default_database"
+        tenant-name: ${CHROMA_TENANT_NAME:default_tenant}
+        database-name: ${CHROMA_DATABASE_NAME:default_database}
         initialize-schema: false
 
 app:

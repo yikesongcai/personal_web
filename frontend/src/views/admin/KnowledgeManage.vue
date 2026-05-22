@@ -141,8 +141,16 @@ const fetchChunks = async () => {
 const changePage = (p) => { page.value = p; fetchChunks() }
 
 const confirmDeleteChunk = (chunk) => {
-  if (!confirm(`确认删除切块 [${chunk.docId}] 的第 ${chunk.chunkIndex} 个切块？\n将同时从向量库中移除。`)) return
-  fetch(`/api/admin/knowledge/chunks/${chunk.id}`, { method: 'DELETE', headers: headers() }).then(() => fetchChunks())
+  if (!confirm(`确认删除文档 [${chunk.docId}] 的全部知识切块？\n将同时从 MySQL 镜像表和向量库中移除。`)) return
+  fetch(`/api/admin/knowledge/chunks/${chunk.id}`, { method: 'DELETE', headers: headers() })
+    .then(async (res) => {
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.message || '删除失败')
+      }
+    })
+    .then(() => fetchChunks())
+    .catch((error) => alert(error.message))
 }
 
 const doReindex = async () => {

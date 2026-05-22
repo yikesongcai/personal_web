@@ -19,9 +19,11 @@
             :class="msg.role"
           >
             <div class="bubble-wrap">
-              <div class="bubble">{{ msg.content }}</div>
+              <div class="bubble" :class="{ pending: isPendingAssistant(msg, index), error: msg.error }">
+                {{ getMessageContent(msg, index) }}
+              </div>
               <div
-                v-if="msg.role === 'assistant' && msg.sources && msg.sources.length"
+                v-if="shouldShowSources(msg)"
                 class="sources"
               >
                 <p class="sources-title">参考来源</p>
@@ -38,7 +40,6 @@
               </div>
             </div>
           </div>
-          <div v-if="loading" class="loading-text">正在生成回答...</div>
         </div>
 
         <form class="input-row" @submit.prevent="sendQuestion">
@@ -102,10 +103,11 @@ async function sendQuestion() {
   }
 
   messages.value.push({ role: 'user', content: rawQuestion });
-  messages.value.push({ role: 'assistant', content: '', sources: [] });
+  messages.value.push({ role: 'assistant', content: '', sources: [], error: false });
 
   loading.value = true;
   question.value = '';
+  let streamFailed = false;
   await scrollToBottom();
 
   try {
@@ -145,26 +147,32 @@ async function sendQuestion() {
           continue;
         }
 
-        if (event.name === 'token' || event.name === 'message') {
+        if ((event.name === 'token' || event.name === 'message') && !streamFailed) {
           appendAssistantText(event.data);
           continue;
         }
 
-        if (event.name === 'sources') {
+        if (event.name === 'sources' && !streamFailed) {
           setAssistantSources(event.data);
           continue;
         }
 
         if (event.name === 'error') {
-          appendAssistantText('\n[错误] ' + event.data);
+          streamFailed = true;
+          markAssistantError(event.data || '回答生成失败，请稍后重试。');
+          continue;
         }
       }
 
       await scrollToBottom();
     }
   } catch (error) {
-    appendAssistantText('\n[错误] 回答生成失败，请稍后重试。');
+    streamFailed = true;
+    markAssistantError('回答生成失败，请稍后重试。');
   } finally {
+    if (streamFailed) {
+      clearAssistantSources();
+    }
     loading.value = false;
     await scrollToBottom();
   }
@@ -174,27 +182,83 @@ function appendAssistantText(delta) {
   const last = messages.value[messages.value.length - 1];
   if (last && last.role === 'assistant') {
     last.content += delta;
+    last.error = false;
+  }
+}
+
+function markAssistantError(message) {
+  const last = messages.value[messages.value.length - 1];
+  if (last && last.role === 'assistant') {
+    last.content = `[错误] ${message}`;
+    last.sources = [];
+    last.error = true;
+  }
+}
+
+function clearAssistantSources() {
+  const last = messages.value[messages.value.length - 1];
+  if (last && last.role === 'assistant') {
+    last.sources = [];
   }
 }
 
 function setAssistantSources(raw) {
   const last = messages.value[messages.value.length - 1];
-  if (!last || last.role !== 'assistant') {
+  if (!last || last.role !== 'assistant' || last.error) {
     return;
   }
 
   try {
     const parsed = JSON.parse(raw);
-    last.sources = Array.isArray(parsed)
-      ? parsed.map((item) => ({
-          title: item.title || '未命名来源',
-          url: item.url || '#',
-          sourceType: item.sourceType || 'unknown'
-        }))
-      : [];
+    last.sources = normalizeSources(parsed);
   } catch (error) {
     last.sources = [];
   }
+}
+
+function normalizeSources(rawSources) {
+  if (!Array.isArray(rawSources)) {
+    return [];
+  }
+
+  const seen = new Set();
+  return rawSources
+    .map((item) => ({
+      title: item.title || '未命名来源',
+      url: item.url || '',
+      sourceType: item.sourceType || 'unknown'
+    }))
+    .filter((source) => source.url && source.url !== '#' && source.url !== 'unknown')
+    .filter((source) => {
+      const key = `${source.url}|${source.title}`;
+      if (seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+}
+
+function getMessageContent(msg, index) {
+  if (isPendingAssistant(msg, index)) {
+    return '思考中...';
+  }
+  return msg.content;
+}
+
+function isPendingAssistant(msg, index) {
+  return loading.value
+    && index === messages.value.length - 1
+    && msg.role === 'assistant'
+    && !msg.error
+    && !msg.content;
+}
+
+function shouldShowSources(msg) {
+  return msg.role === 'assistant'
+    && !msg.error
+    && msg.sources
+    && msg.sources.length;
 }
 
 function parseSseEvent(chunk) {
@@ -242,7 +306,8 @@ async function loadHistory() {
       restored.push({
         role: 'assistant',
         content: turn.answer || '',
-        sources: Array.isArray(turn.sources) ? turn.sources : []
+        sources: normalizeSources(turn.sources),
+        error: Boolean((turn.answer || '').startsWith('[错误]'))
       });
     }
 
@@ -372,10 +437,14 @@ async function scrollToBottom() {
   border: 1px solid rgba(148, 163, 184, 0.25);
 }
 
-.loading-text {
-  color: #f8fafc;
-  font-size: 12px;
-  opacity: 0.75;
+.message-item.assistant .bubble.pending {
+  color: #cbd5e1;
+  font-style: italic;
+}
+
+.message-item.assistant .bubble.error {
+  color: #fecaca;
+  border-color: rgba(248, 113, 113, 0.35);
 }
 
 .sources {
