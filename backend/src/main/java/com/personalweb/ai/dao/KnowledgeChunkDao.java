@@ -50,6 +50,12 @@ public class KnowledgeChunkDao {
             rowMapper, docId);
     }
 
+    public List<KnowledgeChunk> findForTitleSearch(int limit) {
+        return jdbcTemplate.query(
+            "SELECT * FROM knowledge_chunk WHERE title IS NOT NULL ORDER BY id DESC LIMIT ?",
+            rowMapper, limit);
+    }
+
     public void insert(KnowledgeChunk chunk) {
         jdbcTemplate.update(
             "INSERT INTO knowledge_chunk (doc_id, doc_type, title, content, chunk_index) VALUES (?, ?, ?, ?, ?)",

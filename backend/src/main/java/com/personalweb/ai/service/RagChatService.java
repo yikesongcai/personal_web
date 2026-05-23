@@ -21,8 +21,10 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.personalweb.ai.config.RagProperties;
+import com.personalweb.ai.dao.KnowledgeChunkDao;
 import com.personalweb.ai.dto.ChatRequest;
 import com.personalweb.ai.dto.SourceReference;
+import com.personalweb.ai.entity.KnowledgeChunk;
 import com.personalweb.ai.exception.BusinessException;
 
 import reactor.core.publisher.Flux;
@@ -31,11 +33,13 @@ import reactor.core.publisher.Flux;
 public class RagChatService {
 
     private static final Logger log = LoggerFactory.getLogger(RagChatService.class);
+    private static final int TITLE_FALLBACK_LIMIT = 500;
 
     private final VectorStore vectorStore;
     private final ChatClient chatClient;
     private final RagProperties ragProperties;
     private final ChatHistoryService chatHistoryService;
+    private final KnowledgeChunkDao knowledgeChunkDao;
     private final ObjectMapper objectMapper;
     private final DailyStatsService dailyStatsService;
 
@@ -44,12 +48,14 @@ public class RagChatService {
             ChatClient.Builder chatClientBuilder,
             RagProperties ragProperties,
             ChatHistoryService chatHistoryService,
+            KnowledgeChunkDao knowledgeChunkDao,
             ObjectMapper objectMapper,
             DailyStatsService dailyStatsService) {
         this.vectorStore = vectorStore;
         this.chatClient = chatClientBuilder.build();
         this.ragProperties = ragProperties;
         this.chatHistoryService = chatHistoryService;
+        this.knowledgeChunkDao = knowledgeChunkDao;
         this.objectMapper = objectMapper;
         this.dailyStatsService = dailyStatsService;
     }
@@ -76,7 +82,9 @@ public class RagChatService {
 
         String systemPrompt = "你是一个专业的个人网站智能导览助手。请严格基于以下提供的网站内容回答用户问题。"
                 + "如果上下文没有相关信息，请明确说明无法从知识库中找到答案。"
-                + "不要编造上下文中没有的项目、文章、技术细节或结论；如果信息不足，请说明需要补充哪些信息。\n\n"
+                + "不要编造上下文中没有的项目、文章、技术细节或结论；如果信息不足，请说明需要补充哪些信息。"
+                + "如果上下文已经命中了用户提到的项目或文章，但用户问到的某个功能在该项目中不存在或没有资料，"
+                + "请先说明已找到该项目，再基于上下文概括它真实包含的功能，并明确指出没有找到该功能的资料。\n\n"
                 + "内容:\n" + context;
 
         StringBuilder answerBuilder = new StringBuilder();
@@ -120,8 +128,13 @@ public class RagChatService {
 
         try {
             List<Document> docs = vectorStore.similaritySearch(request);
-            return preferDirectTitleMatches(question, docs);
+            return mergeTitleMatches(question, preferDirectTitleMatches(question, docs));
         } catch (Exception ex) {
+            List<Document> titleMatches = findTitleMatchesFromMirror(question);
+            if (!titleMatches.isEmpty()) {
+                log.warn("Vector search failed, using title fallback from knowledge mirror, question={}", question, ex);
+                return titleMatches;
+            }
             throw new ChatFlowException("知识库检索失败，请检查 RAG 数据库连接后重试。", ex);
         }
     }
@@ -139,8 +152,13 @@ public class RagChatService {
 
         try {
             List<Document> docs = vectorStore.similaritySearch(request);
-            return buildSources(preferDirectTitleMatches(question, docs));
+            return buildSources(mergeTitleMatches(question, preferDirectTitleMatches(question, docs)));
         } catch (Exception ex) {
+            List<Document> titleMatches = findTitleMatchesFromMirror(question);
+            if (!titleMatches.isEmpty()) {
+                log.warn("Source vector search failed, using title fallback from knowledge mirror, question={}", question, ex);
+                return buildSources(titleMatches);
+            }
             log.error("Source search failed, question={}", question, ex);
             throw BusinessException.externalService("RAG_SEARCH_FAILED", "知识库检索失败，请检查 RAG 数据库连接后重试。");
         }
@@ -202,6 +220,65 @@ public class RagChatService {
                 .toList();
 
         return directMatches.isEmpty() ? docs : directMatches;
+    }
+
+    private List<Document> mergeTitleMatches(String question, List<Document> docs) {
+        List<Document> titleMatches = findTitleMatchesFromMirror(question);
+        if (titleMatches.isEmpty()) {
+            return docs == null ? List.of() : docs;
+        }
+
+        Map<String, Document> merged = new LinkedHashMap<>();
+        titleMatches.forEach(doc -> merged.put(documentKey(doc), doc));
+        if (docs != null) {
+            docs.forEach(doc -> merged.putIfAbsent(documentKey(doc), doc));
+        }
+        return List.copyOf(merged.values());
+    }
+
+    private List<Document> findTitleMatchesFromMirror(String question) {
+        String normalizedQuestion = normalizeForMatching(question);
+        try {
+            return knowledgeChunkDao.findForTitleSearch(TITLE_FALLBACK_LIMIT).stream()
+                    .filter(chunk -> titleMatchesQuestion(normalizedQuestion, chunk.getTitle()))
+                    .map(this::toDocument)
+                    .toList();
+        } catch (Exception ex) {
+            log.warn("Title fallback search failed, question={}", question, ex);
+            return List.of();
+        }
+    }
+
+    private Document toDocument(KnowledgeChunk chunk) {
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("sourceType", chunk.getDocType());
+        metadata.put("title", chunk.getTitle());
+        metadata.put("url", toSourceUrl(chunk));
+
+        return new Document(chunk.getDocId(), chunk.getContent(), metadata);
+    }
+
+    private String toSourceUrl(KnowledgeChunk chunk) {
+        if (chunk.getDocId() == null) {
+            return "unknown";
+        }
+
+        if (chunk.getDocId().startsWith("project_")) {
+            return "/projects/" + chunk.getDocId().substring("project_".length());
+        }
+        if (chunk.getDocId().startsWith("article_")) {
+            return "/articles/" + chunk.getDocId().substring("article_".length());
+        }
+        return "/knowledge/" + chunk.getDocId();
+    }
+
+    private String documentKey(Document doc) {
+        Object id = doc.getId();
+        if (id != null) {
+            return String.valueOf(id);
+        }
+        Map<String, Object> metadata = doc.getMetadata();
+        return metadata.getOrDefault("url", "") + "|" + metadata.getOrDefault("title", "");
     }
 
     private boolean titleMatchesQuestion(String normalizedQuestion, Document doc) {
